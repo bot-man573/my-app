@@ -34,11 +34,13 @@ export default function Home() {
   const [totalRegisteredAmount, setTotalRegisteredAmount] = useState(0);
   const [equalAmount, setEqualAmount] = useState<number | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [showAddPersonCard, setShowAddPersonCard] = useState(false);
 
   const handleAddPerson = () => {
     const newPerson: Person = { name, items: [] };
     setPeople([...people, newPerson]);
     setName("");
+    setShowAddPersonCard(false);
   };
 
   const handleAddItem = () => {
@@ -88,6 +90,21 @@ export default function Home() {
           name: `Person ${index + 1}`,
           items: [{ name: "Equal Share", amount: equalAmount }],
         }));
+        setPeople(results);
+      }
+    } else if (splitMethod === "random") {
+      const amount = Math.floor(parseFloat(totalAmount));
+      const peopleCount = people.length;
+      if (!isNaN(amount) && peopleCount > 0) {
+        let remainingAmount = amount;
+        const results = people.map((person, index) => {
+          const randomAmount = index === peopleCount - 1 ? remainingAmount : Math.floor(Math.random() * remainingAmount);
+          remainingAmount -= randomAmount;
+          return {
+            ...person,
+            items: [{ name: "Random Share", amount: randomAmount }],
+          };
+        });
         setPeople(results);
       }
     } else {
@@ -170,6 +187,30 @@ export default function Home() {
           </Card>
         </div>
       )}
+      {showAddPersonCard && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>人を追加</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col gap-2">
+                <input
+                  type="text"
+                  placeholder="名前"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="border p-2 rounded w-full"
+                />
+              </div>
+            </CardContent>
+            <CardFooter className="flex justify-end gap-2">
+              <Button onClick={handleAddPerson}>追加</Button>
+              <Button onClick={() => setShowAddPersonCard(false)}>キャンセル</Button>
+            </CardFooter>
+          </Card>
+        </div>
+      )}
       {showHistory && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <Card className="w-full max-w-3xl">
@@ -215,9 +256,9 @@ export default function Home() {
           </Card>
         </div>
       )}
-      <div className={`grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)] ${selectedPerson || showHistory ? 'blur-sm' : ''}`}>
+      <div className={`grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)] ${selectedPerson || showHistory || showAddPersonCard ? 'blur-sm' : ''}`}>
         <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-          <div className="flex justify-center w-full"> {/* ここを追加 */}
+          <div className="flex justify-center w-full">
             <Image
               className="dark:invert"
               src="/img/logo.png"
@@ -236,6 +277,10 @@ export default function Home() {
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="registered" id="registered" />
                 <Label htmlFor="registered">登録して割り勘</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="random" id="random" />
+                <Label htmlFor="random">ランダムに割り勘</Label>
               </div>
             </RadioGroup>
             {splitMethod === "equal" && (
@@ -258,6 +303,30 @@ export default function Home() {
                 />
               </div>
             )}
+            {splitMethod === "random" && (
+              <input
+                type="number"
+                placeholder="合計金額"
+                value={totalAmount}
+                onChange={(e) => setTotalAmount(e.target.value)}
+                className="border p-2 rounded"
+              />
+            )}
+            {splitMethod === "random" && (
+              <Button onClick={() => setShowAddPersonCard(true)}>人を追加</Button>
+            )}
+            {splitMethod === "equal" && (
+              <div className="flex gap-2">
+                <Button onClick={handleCalculate}>計算する</Button>
+                <Button onClick={handleClear}>クリア</Button>
+              </div>
+            )}
+            {splitMethod === "random" && (
+              <div className="flex gap-2">
+                <Button onClick={handleCalculate}>漢気を見せろ！</Button>
+                <Button onClick={handleClear}>クリア</Button>
+              </div>
+            )}
             {splitMethod === "registered" && (
               <div className="flex gap-2">
                 <input
@@ -270,16 +339,40 @@ export default function Home() {
                 <Button onClick={handleAddPerson}>追加</Button>
               </div>
             )}
-            {splitMethod === "equal" && (
-              <div className="flex gap-2">
-                <Button onClick={handleCalculate}>計算する</Button>
-                <Button onClick={handleClear}>クリア</Button>
-              </div>
-            )}
             {splitMethod === "registered" && (
               <Button onClick={() => setShowHistory(true)}>履歴</Button>
             )}
           </div>
+          {splitMethod === "random" && (
+            <>
+              <div className="mt-4 w-full">
+                <h2 className="text-xl font-bold">登録された人</h2>
+                <Table className="w-full">
+                  <TableCaption>登録された人の一覧</TableCaption>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[100px]">名前</TableHead>
+                      <TableHead className="w-[100px]">合計金額</TableHead>
+                      <TableHead className="w-[100px]">操作</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {people.map((person, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium">{person.name}</TableCell>
+                        <TableCell>
+                          {Math.floor(person.items.reduce((sum, item) => sum + item.amount, 0))} 円
+                        </TableCell>
+                        <TableCell>
+                          <Button onClick={() => { setSelectedPerson(person); setIsEditing(true); setName(person.name); }}>編集</Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
+          )}
           {splitMethod === "registered" && (
             <>
               <div className="mt-4 w-full">
