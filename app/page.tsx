@@ -144,7 +144,7 @@ export default function Home() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <Card className="w-full max-w-md">
             <CardHeader>
-              <CardTitle>{isEditing ? "編集" : "追加"} {selectedPerson.name}のアイテム</CardTitle>
+              <CardTitle>{isEditing ? "編集" : "追加"} お名前は？</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col gap-2">
